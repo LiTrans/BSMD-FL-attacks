@@ -125,5 +125,19 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
+federated/venv/
+
 # Pyre type checker
 .pyre/
+
+.idea/
+
+federated/server.key
+federated/server.pem
+federated/logger-weights-worker.txt
+federated/logger-weights.txt
+federated/logger.txt
+federated/logs_dir/
+federated/worker*
+federated/data_test/
+federated/train_sets/

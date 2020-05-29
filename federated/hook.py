@@ -457,6 +457,7 @@ class _FederatedHook(tf.train.SessionRunHook):
             if self._is_chief:
                 self._server_socket.listen(self.num_workers - 1)
                 gathered_weights = [session.run(tf.trainable_variables())]
+                np.save('data_test/chief.npy', gathered_weights[0], allow_pickle=True)
                 users = []
                 names = []
                 addresses = []
@@ -502,8 +503,8 @@ class _FederatedHook(tf.train.SessionRunHook):
                     rearranged_weights[i] = np.mean(elem, axis=0)
                 print('Average applied '
                       + 'with {} workers, iter: {}'.format(self.num_workers, step_value))
-                np.save('data_test/chief.npy', rearranged_weights)
-                sys.exit('Terminated ')
+                np.save('data_test/averaged.npy', rearranged_weights, allow_pickle=True)
+                # sys.exit('Terminated ')
                 for i, user in enumerate(users):
                     try:
                         start = time.time()
@@ -536,7 +537,7 @@ class _FederatedHook(tf.train.SessionRunHook):
                 print('The type of value variable is {}'.format(type(value)))
                 # print('{}: The weight matrix: dimension {}, shape {}, elements {}'.
                 #       format(self._worker_name, value.ndim, value.shape, value.size))
-                np.save('data_test/' + self._worker_name + '.npy', value)
+                np.save('data_test/' + self._worker_name + '.npy', value, allow_pickle=True)
                 self._send_np_array(value, worker_socket, self._worker_name, step_value, self.num_workers, 'chief')
                 end = time.time()
                 logger = open('logger-weights-worker.txt', 'a')

@@ -31,6 +31,7 @@ import numpy as np
 import json
 from iroha_config import SSL_CONF as SC
 from iroha_config import SEND_RECEIVE_CONF as SRC
+from random import randint
 # import federated.iroha_config as iroha_config
 # import federated.iroha_functions as iroha_functions
 
@@ -267,7 +268,7 @@ class _FederatedHook(tf.train.SessionRunHook):
         #         iroha_functions.set_detail_to_node(iroha_config.iroha_chief, worker_names[0],
         #                                            iroha_config.chief_private_key, 'chief_weight', transaction)
         #         end = time.time()
-        #         logger = open('logger-ledger.txt', 'a')
+        #         logger = open('data_paper/logs/logger-ledger.txt', 'a')
         #         logger.write('ledger txn: ' + str(end - start) + '\n')
         #         logger.close()
         #     else:
@@ -275,7 +276,7 @@ class _FederatedHook(tf.train.SessionRunHook):
         #         iroha_functions.set_detail_to_node(iroha_config.iroha_chief, str(receiver) + '@' + iroha_config.domain_id,
         #                                            iroha_config.chief_private_key, 'chief_weight', transaction)
         #         end = time.time()
-        #         logger = open('logger-ledger.txt', 'a')
+        #         logger = open('data_paper/logs/logger-ledger.txt', 'a')
         #         logger.write('ledger txn: ' + str(end - start) + '\n')
         #         logger.close()
         # else:
@@ -308,7 +309,7 @@ class _FederatedHook(tf.train.SessionRunHook):
         #         iroha_functions.set_detail_to_node(iroha_config.iroha_worker9, iroha_config.chief_account_id,
         #                                            iroha_config.worker9_private_key, str(sender) + '_weight', transaction)
         #     end = time.time()
-        #     logger = open('logger-ledger-worker.txt', 'a')
+        #     logger = open('data_paper/logs/logger-ledger-worker.txt', 'a')
         #     logger.write('ledger txn: ' + str(end - start) + '\n')
         #     logger.close()
 
@@ -451,13 +452,13 @@ class _FederatedHook(tf.train.SessionRunHook):
             their graph.
          """
         step_value = run_values.results
-        # print('step value: ', step_value, self._interval_steps)
+        print('step value: ', step_value)
         session = run_context.session
         if step_value % self._interval_steps == 0 and not step_value == 0:
             if self._is_chief:
                 self._server_socket.listen(self.num_workers - 1)
                 gathered_weights = [session.run(tf.trainable_variables())]
-                np.save('data_test/chief.npy', gathered_weights[0], allow_pickle=True)
+                # np.save('data_test/chief.npy', gathered_weights[0], allow_pickle=True)
                 users = []
                 names = []
                 addresses = []
@@ -483,6 +484,7 @@ class _FederatedHook(tf.train.SessionRunHook):
                         names.append(name)
                         addresses.append(address)
                         print('Received from ' + address[0] + ':' + str(address[1]))
+                        print('Name ' + name)
                     except (ConnectionResetError, BrokenPipeError):
                         print('Could not recieve from : '
                               + address[0] + ':' + str(address[1])
@@ -503,7 +505,11 @@ class _FederatedHook(tf.train.SessionRunHook):
                     rearranged_weights[i] = np.mean(elem, axis=0)
                 print('Average applied '
                       + 'with {} workers, iter: {}'.format(self.num_workers, step_value))
-                np.save('data_test/averaged.npy', rearranged_weights, allow_pickle=True)
+                logger = open("data_paper/logs/active_workers.txt", "a")
+                logger.write('Average applied '
+                      + 'with {} workers, iter: {}'.format(self.num_workers, step_value) + '\n')
+                logger.close()
+                # np.save('data_test/averaged.npy', rearranged_weights, allow_pickle=True)
                 # sys.exit('Terminated ')
                 for i, user in enumerate(users):
                     try:
@@ -512,7 +518,7 @@ class _FederatedHook(tf.train.SessionRunHook):
                         self._send_np_array(rearranged_weights, user, self._worker_name, step_value, self.num_workers,
                                             names[i])
                         end = time.time()
-                        logger = open('logger-weights.txt', 'a')
+                        logger = open('data_paper/logs/logger-weights.txt', 'a')
                         logger.write('send weights: ' + str(end - start) + '\n')
                         logger.close()
                         user.close()
@@ -533,14 +539,32 @@ class _FederatedHook(tf.train.SessionRunHook):
                 worker_socket = self._start_socket_worker()
                 print('Sending weights')
                 value = session.run(tf.trainable_variables())
+                if step_value > 189:
+                    # if self._worker_name == 'worker1' or self._worker_name == 'worker2':
+                    if self._worker_name == 'worker1':
+                        first = randint(0, 95)
+                        second = randint(0, 4)
+                        third = randint(0, 4)
+                        print(third, second, first)
+                        print("Attack!!!!!!!!!!")
+                        # print(value[third][second][first])
+                        try:
+                            array = np.zeros(len(value[third][second][first]), dtype=float)
+                            value[third][second][first] = array
+                        except:
+                            array = np.zeros(len(value[0][0][0]), dtype=float)
+                            value[0][0][0] = array
+
+
+                # print(value[third][second][first])
                 start = time.time()
                 print('The type of value variable is {}'.format(type(value)))
                 # print('{}: The weight matrix: dimension {}, shape {}, elements {}'.
                 #       format(self._worker_name, value.ndim, value.shape, value.size))
-                np.save('data_test/' + self._worker_name + '.npy', value, allow_pickle=True)
+                # np.save('data_test/' + self._worker_name + '.npy', value, allow_pickle=True)
                 self._send_np_array(value, worker_socket, self._worker_name, step_value, self.num_workers, 'chief')
                 end = time.time()
-                logger = open('logger-weights-worker.txt', 'a')
+                logger = open('data_paper/logs/logger-weights-worker.txt', 'a')
                 logger.write('send weights: ' + str(end - start) + '\n')
                 # logger.close()
                 name, broadcasted_weights = self._get_np_array(worker_socket)

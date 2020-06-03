@@ -24,7 +24,7 @@ SSL_CONF.cert_path = 'server.pem'
 BATCH_SIZE = 16
 EPOCHS = 250
 INTERVAL_STEPS = 1  # Steps between averages
-WAIT_TIME = 15  # How many seconds to wait for new workers to connect
+WAIT_TIME = 20 # How many seconds to wait for new workers to connect
 CHIEF_PUBLIC_IP = 'localhost:7777'  # Public IP of the chief worker
 CHIEF_PRIVATE_IP = 'localhost:7777'  # Private IP of the chief worker
 

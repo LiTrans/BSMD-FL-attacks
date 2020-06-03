@@ -141,3 +141,4 @@ federated/logs_dir/
 federated/worker*
 federated/data_test/
 federated/train_sets/
+federated/data_paper/

@@ -8,10 +8,11 @@ from hook import _FederatedHook
 import os
 import sys
 import numpy as np
-np.set_printoptions(threshold=sys.maxsize)
 from iroha_config import CHIEF_PRIVATE_IP, CHIEF_PUBLIC_IP, BATCH_SIZE, EPOCHS, INTERVAL_STEPS, WAIT_TIME
 from time import time
 import tensorflow as tf
+
+np.set_printoptions(threshold=sys.maxsize)
 
 flags = tf.app.flags
 
@@ -41,7 +42,8 @@ num_stride_conv2d_ensemble = []
 maxpool_size_ensemble = []
 
 # The data structures in the following data files are different from those in ensemble paper
-logger = open("logger.txt", "a")
+logger = open("data_paper/logs/accuracy_loss.csv", "a")
+# logger.write("Epoch,accuracy,loss")
 X_train = np.load("train_sets/{}.npy".format(FLAGS.file_X))
 Y_train = np.load("train_sets/{}.npy".format(FLAGS.file_Y))
 
@@ -156,20 +158,15 @@ class _LoggerHook(tf.train.SessionRunHook):
         self._total_loss += loss_value
         self._total_acc += acc_value
 
-        if FLAGS.worker_name == 'chief':
-            if (step_value) % INTERVAL_STEPS == 1:
-                logger.write('The averaged epoch is: ')
-                print('Below is the Averaged Epoch')
-
         if (step_value + 1) % N_BATCHES == 0:
+            # Only log the chief
+            if FLAGS.worker_name == 'chief':
+                logger.write("{},{:.4f},{:.4f}".format(int(step_value / N_BATCHES), self._total_acc / N_BATCHES,
+                                                       self._total_loss / N_BATCHES) + '\n')
+
             print("Epoch {}/{} - loss: {:.4f} - acc: {:.4f}".format(int(step_value / N_BATCHES), EPOCHS,
                                                                     self._total_loss / N_BATCHES,
                                                                     self._total_acc / N_BATCHES))
-            # Only log the chief
-            if FLAGS.worker_name == 'chief':
-                logger.write("Epoch {}/{} - loss: {:.4f} - acc: {:.4f}".format(int(step_value / N_BATCHES), EPOCHS,
-                                                                               self._total_loss / N_BATCHES,
-                                                                               self._total_acc / N_BATCHES) + '\n')
             self._total_loss = 0
             self._total_acc = 0
 
@@ -194,5 +191,5 @@ with tf.name_scope('monitored_session'):
 
 end_time = time()
 
-logger.write('Total time: ' + str(end_time - start_time) + '\n')
+# logger.write('Total time: ' + str(end_time - start_time) + '\n')
 logger.close()

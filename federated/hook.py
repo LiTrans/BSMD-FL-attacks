@@ -31,6 +31,7 @@ import numpy as np
 import json
 from iroha_config import SSL_CONF as SC
 from iroha_config import SEND_RECEIVE_CONF as SRC
+from attacker import node_attacking
 from random import randint
 # import federated.iroha_config as iroha_config
 # import federated.iroha_functions as iroha_functions
@@ -492,10 +493,7 @@ class _FederatedHook(tf.train.SessionRunHook):
                         connection_socket.close()
 
                 self.num_workers = len(users) + 1
-
-
                 rearranged_weights = []
-
                 # In gathered_weights, each list represents the weights of each worker.
                 # We want to gather in each list the weights of a single layer so
                 # to average them afterwards
@@ -506,11 +504,17 @@ class _FederatedHook(tf.train.SessionRunHook):
                 print('Average applied '
                       + 'with {} workers, iter: {}'.format(self.num_workers, step_value))
                 logger = open("data_paper/logs/active_workers.txt", "a")
-                logger.write('Average applied '
-                      + 'with {} workers, iter: {}'.format(self.num_workers, step_value) + '\n')
+                logger.write('Average applied with {} workers, iter: {}'.format(self.num_workers, step_value) + '\n')
                 logger.close()
-                # np.save('data_test/averaged.npy', rearranged_weights, allow_pickle=True)
-                # sys.exit('Terminated ')
+                ########################################################
+                ########################################################
+                ########################################################
+                # The malicious node catches the local model at each EPOCH
+                np.save('data_test/global_model.npy', rearranged_weights, allow_pickle=True)
+                ########################################################
+                ########################################################
+                ########################################################
+                ########################################################
                 for i, user in enumerate(users):
                     try:
                         start = time.time()
@@ -539,26 +543,16 @@ class _FederatedHook(tf.train.SessionRunHook):
                 worker_socket = self._start_socket_worker()
                 print('Sending weights')
                 value = session.run(tf.trainable_variables())
+                #################################################################
+                #################################################################
+                # Nodes are attacking
                 if step_value > 189:
-                    # if self._worker_name == 'worker1' or self._worker_name == 'worker2':
-                    if self._worker_name == 'worker1':
-                        first = randint(0, 95)
-                        second = randint(0, 4)
-                        third = randint(0, 4)
-                        print(third, second, first)
-                        print("Attack!!!!!!!!!!")
-                        # print(value[third][second][first])
-                        try:
-                            array = np.zeros(len(value[third][second][first]), dtype=float)
-                            value[third][second][first] = array
-                        except:
-                            array = np.zeros(len(value[0][0][0]), dtype=float)
-                            value[0][0][0] = array
-
-
-                # print(value[third][second][first])
+                    if self._worker_name == 'worker1' or self._worker_name == 'worker2':
+                        value = node_attacking()
+                #################################################################
+                #################################################################
+                #################################################################
                 start = time.time()
-                print('The type of value variable is {}'.format(type(value)))
                 # print('{}: The weight matrix: dimension {}, shape {}, elements {}'.
                 #       format(self._worker_name, value.ndim, value.shape, value.size))
                 # np.save('data_test/' + self._worker_name + '.npy', value, allow_pickle=True)
